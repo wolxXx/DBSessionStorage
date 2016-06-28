@@ -26,12 +26,12 @@ class DBStorage
     protected $sessionConfig;
     protected $serviceConfig;
 
-    public function __construct(Adapter $adapter, $session_config, $service_config)
+    public function __construct(Adapter $adapter, $session_config, $service_config, $table_name)
     {
         $this->adapter = $adapter;
         $this->sessionConfig = $session_config;
         $this->serviceConfig = $service_config;
-        $this->tblGW = new \Zend\Db\TableGateway\TableGateway('sessions', $this->adapter);
+        $this->tblGW = new \Zend\Db\TableGateway\TableGateway($table_name, $this->adapter);
     }
 
     public function setSessionStorage()
