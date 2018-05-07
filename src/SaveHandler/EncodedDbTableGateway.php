@@ -1,16 +1,39 @@
 <?php
 
 namespace DBSessionStorage\SaveHandler;
+
 use Zend\Session\SaveHandler\DbTableGateway;
 
-class EncodedDbTableGateway extends DbTableGateway{
-    
+/**
+ * Class EncodedDbTableGateway
+ *
+ * @package DBSessionStorage\SaveHandler
+ */
+class EncodedDbTableGateway extends DbTableGateway
+{
     /**
-     * Write session data
-     *
-     * @param string $id
-     * @param string $data
-     * @return bool
+     * @inheritdoc
+     */
+    public function read($id, $destroyExpired = true)
+    {
+        $rows = $this->tableGateway->select(array(
+            $this->options->getIdColumn()   => $id,
+            $this->options->getNameColumn() => $this->sessionName,
+        ));
+        if ($row = $rows->current()) {
+            if ($row->{$this->options->getModifiedColumn()} +
+                $row->{$this->options->getLifetimeColumn()} > time()) {
+                return base64_decode($row->{$this->options->getDataColumn()});
+            }
+            $this->destroy($id);
+        }
+
+        return '';
+    }
+
+
+    /**
+     * @inheritdoc
      */
     public function write($id, $data)
     {
@@ -19,45 +42,31 @@ class EncodedDbTableGateway extends DbTableGateway{
             $this->options->getModifiedColumn() => time(),
             $this->options->getDataColumn()     => (string) $data,
         );
-
         $rows = $this->tableGateway->select(array(
             $this->options->getIdColumn()   => $id,
             $this->options->getNameColumn() => $this->sessionName,
         ));
-
         if ($row = $rows->current()) {
-            return (bool) $this->tableGateway->update($data, array(
-                $this->options->getIdColumn()   => $id,
-                $this->options->getNameColumn() => $this->sessionName,
-            ));
+            try {
+                $this->tableGateway->update($data, array(
+                    $this->options->getIdColumn()   => $id,
+                    $this->options->getNameColumn() => $this->sessionName,
+                ));
+
+                return true;
+            } catch (\Exception $exception) {
+                return false;
+            }
         }
         $data[$this->options->getLifetimeColumn()] = $this->lifetime;
         $data[$this->options->getIdColumn()]       = $id;
         $data[$this->options->getNameColumn()]     = $this->sessionName;
+        try {
+            $this->tableGateway->insert($data);
 
-        return (bool) $this->tableGateway->insert($data);
-    }
-    
-    /**
-     * Read session data
-     *
-     * @param string $id
-     * @return string
-     */
-    public function read($id)
-    {
-        $rows = $this->tableGateway->select(array(
-            $this->options->getIdColumn()   => $id,
-            $this->options->getNameColumn() => $this->sessionName,
-        ));
-
-        if ($row = $rows->current()) {
-            if ($row->{$this->options->getModifiedColumn()} +
-                $row->{$this->options->getLifetimeColumn()} > time()) {
-                return base64_decode($row->{$this->options->getDataColumn()});
-            }
-            $this->destroy($id);
+            return true;
+        } catch (\Exception $exception) {
+            return false;
         }
-        return '';
     }
 }
