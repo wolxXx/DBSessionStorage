@@ -25,7 +25,6 @@ class EncodedDbTableGateway extends DbTableGateway
                 $row->{$this->options->getLifetimeColumn()} > time()) {
                 return base64_decode($row->{$this->options->getDataColumn()});
             }
-            $this->destroy($id);
         }
 
         return '';
