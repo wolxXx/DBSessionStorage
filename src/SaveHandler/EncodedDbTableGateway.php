@@ -51,7 +51,8 @@ class EncodedDbTableGateway extends DbTableGateway
                     $this->options->getIdColumn()   => $id,
                     $this->options->getNameColumn() => $this->sessionName,
                 ));
-
+                $this->gc($this->lifetime);
+                
                 return true;
             } catch (\Exception $exception) {
                 return false;
@@ -62,6 +63,7 @@ class EncodedDbTableGateway extends DbTableGateway
         $data[$this->options->getNameColumn()]     = $this->sessionName;
         try {
             $this->tableGateway->insert($data);
+            $this->gc($this->lifetime);
 
             return true;
         } catch (\Exception $exception) {
