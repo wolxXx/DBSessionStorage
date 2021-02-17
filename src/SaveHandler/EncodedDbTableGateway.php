@@ -11,6 +11,8 @@ use Zend\Session\SaveHandler\DbTableGateway;
  */
 class EncodedDbTableGateway extends DbTableGateway
 {
+    public static $shallSaveSession = true;
+    
     /**
      * @inheritdoc
      */
@@ -36,6 +38,9 @@ class EncodedDbTableGateway extends DbTableGateway
      */
     public function write($id, $data)
     {
+        if (false === static::$shallSaveSession) {
+            return true;
+        }
         $data = base64_encode($data);
         $data = array(
             $this->options->getModifiedColumn() => time(),
